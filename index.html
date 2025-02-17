@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDG 11.2.1 ver.05.5</title>
+    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet"/>
+    <style>
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 10px;
+            border-radius: 3px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .disp-layers {
+            background-color: #ffffff;
+            margin: 3px;
+        }
+        .disp-attributes {
+            background-color: #ffffff;
+            margin: 3px;
+        }
+        #zoom-level {
+            position: absolute;
+            top: 10px;
+            right: 50px;
+            background-color: white;
+            padding: 5px;
+            border-radius: 3px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf/turf.min.js"></script>
+</head>
+<body>
+    <div id="map"></div>
+<div id="controls">
+    <button id="toggle-layers-btn">Layer On/Off</button>
+    <div id="layers-container" class="disp-layers" style="display: none;">
+        <label>
+            <input type="checkbox" id="osm-layer-chk" checked>
+            Open Street Map
+        </label>
+        <br>
+        <label>
+            <input type="checkbox" id="population-all-fill-layer-chk" checked>
+            Population2020
+        </label>
+        <br>
+        <label>
+            <input type="checkbox" id="PublicTransport-points-layer-chk" checked>
+            バス停・フェリー乗り場
+        </label>
+        <br>
+        <label>
+            <input type="checkbox" id="MicroletRoute-line-layer-chk" checked>
+            MicroletRoute
+        </label>
+        <br>
+        <label>
+            <input type="checkbox" id="outline-layer-chk">
+            境界線
+        </label>
+        <br>
+        <label>------属性情報------</label>
+        <div id="attributes"></div>
+    </div>
+</div>
+    <div id="zoom-level">Zoom: 12</div>
+    <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pmtiles/dist/pmtiles.js"></script>
+    <script>
+        const protocol = new pmtiles.Protocol();
+        maplibregl.addProtocol('pmtiles', protocol.tile);
+
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: 'style.json',
+            center: [125.5736, -8.5568],
+            zoom: 12
+        });
+
+
+
+        map.addControl(new maplibregl.NavigationControl());
+
+        const layerIds = [
+            'osm-layer',
+            'PublicTransport-points-layer',
+            'MicroletRoute-line-layer'
+        ];
+
+        document.querySelector('#population-all-fill-layer-chk').addEventListener('change', () => {
+            const isChecked = document.getElementById('population-all-fill-layer-chk').checked;
+            const fillLayerIds = ['population-fill-layer', 'population-outline-layer'];
+            fillLayerIds.forEach(id => {
+                if (isChecked) {
+                    map.setLayoutProperty(id, 'visibility', 'visible');
+                } else {
+                    map.setLayoutProperty(id, 'visibility', 'none');
+                }
+            });
+        });
+
+        document.querySelector('#outline-layer-chk').addEventListener('change', () => {
+            const isChecked = document.getElementById('outline-layer-chk').checked;
+            const outlineLayerIds = ['MUNICIPIO-outline-layer', 'PostuAdministrativo-outline-layer', 'Suco-outline-layer'];
+            outlineLayerIds.forEach(id => {
+                if (isChecked) {
+                    map.setLayoutProperty(id, 'visibility', 'visible');
+                } else {
+                    map.setLayoutProperty(id, 'visibility', 'none');
+                }
+            });
+        });
+
+document.querySelector('#toggle-layers-btn').addEventListener('click', () => {
+    const layersContainer = document.getElementById('layers-container');
+    if (layersContainer.style.display === 'none' || layersContainer.style.display === '') {
+        layersContainer.style.display = 'block';
+    } else {
+        layersContainer.style.display = 'none';
+    }
+});
+
+        const toggleLayer = (id) => {
+            const isChecked = document.getElementById(`${id}-chk`).checked;
+            if (isChecked) {
+                map.setLayoutProperty(id, 'visibility', 'visible');
+            } else {
+                map.setLayoutProperty(id, 'visibility', 'none');
+            }
+        }
+
+        layerIds.forEach(lyrId => {
+            document.querySelector(`#${lyrId}-chk`).addEventListener('change', () => {
+                toggleLayer(lyrId);
+            });
+        });
+
+        const updateZoomLevel = () => {
+            const zoom = map.getZoom().toFixed(2);
+            document.getElementById('zoom-level').innerText = `Zoom: ${zoom}`;
+        }
+
+        map.on('zoom', updateZoomLevel);
+        updateZoomLevel();
+
+        const displayPolygonArea = (polygon) => {
+            const area = turf.area(polygon);
+            return area;
+        };
+
+        map.on('click', 'population-fill-layer', e => {
+            if (e.features && e.features.length > 0) {
+                const properties = e.features[0].properties;
+                const geometry = e.features[0].geometry;
+                let propertiesStr = '';
+
+                if (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon') {
+                    const area = displayPolygonArea(geometry);
+                    propertiesStr += `面積: ${area.toFixed(2)} 平方メートル\n`;
+                }
+
+                for (const prop in properties) {
+                    propertiesStr += `${prop}: ${properties[prop]}\n`;
+                }
+                document.querySelector('#attributes').innerText = propertiesStr;
+            }
+        });
+
+        map.on('click', 'PublicTransport-points-layer', e => {
+            if (e.features && e.features.length > 0) {
+                const properties = e.features[0].properties;
+                let propertiesStr = '';
+                for (const prop in properties) {
+                    propertiesStr += `${prop}: ${properties[prop]}\r\n`;
+                }
+                document.querySelector('#attributes').innerText = propertiesStr;
+            }
+        });
+
+        map.on('click', 'MicroletRoute-line-layer', e => {
+            if (e.features && e.features.length > 0) {
+                const properties = e.features[0].properties;
+                let propertiesStr = '';
+                for (const prop in properties) {
+                    propertiesStr += `${prop}: ${properties[prop]}\r\n`;
+                }
+                document.querySelector('#attributes').innerText = propertiesStr;
+            }
+        });
+    </script>
+</body>
+</html>
