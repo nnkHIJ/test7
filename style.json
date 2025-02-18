@@ -24,7 +24,7 @@
         "pmtiles://https://nnkhij.github.io/test6/data/PublicTransport.pmtiles/{z}/{x}/{y}"
       ],
       "minzoom": 4,
-      "maxzoom": 10,
+      "maxzoom": 16,
       "attribution": "<a href=\"https://dilimicroletroutes.github.io/\" target=\"_blank\">DiliMicroletRoutes</a> "
     },
     "pm25-source": {
