@@ -13,7 +13,7 @@
     "population-source": {
       "type": "vector",
       "tiles": [
-        "pmtiles://https://hfu.github.io/worldpop-h3/pop.pmtiles/{z}/{x}/{y}"
+        "pmtiles://https://data.source.coop/smartmaps/h3ys-worldpop/tls.pmtiles/{z}/{x}/{y}"
       ],
       "minzoom": 4,
       "maxzoom": 14
