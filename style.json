@@ -16,7 +16,7 @@
         "pmtiles://https://data.source.coop/smartmaps/h3ys-worldpop/tls.pmtiles/{z}/{x}/{y}"
       ],
       "minzoom": 4,
-      "maxzoom": 14
+      "maxzoom": 12
     },
     "PublicTransport-source": {
       "type": "vector",
